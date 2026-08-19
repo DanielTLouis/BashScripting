@@ -3,8 +3,7 @@ A collection of Bash shell scripts created for practicing automation, system adm
 
 ### Running the Scripts
 Before running a script, make sure it has executable permissions.
-
-    ```bash  
+ 
     chmod +x <script_name> 
     ./<script_name>
 
