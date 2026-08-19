@@ -1,13 +1,41 @@
 # BashScripting
-Automation Scripting for Bash Shell. Practice Bash Scripting while going through O'Reilly Books on the subject. 
+A collection of Bash shell scripts created for practicing automation, system administration, and Linux scripting while working through O'Reilly books and other Bash scripting resources.
 
-> To run each script simply check that they can execute with permmistions and then call the script 
->> chmod +x <script_name> 
-./<script_name> 
-Make sure to change the <scipt_name> to the actual name of the scipt you wish to run
+### Running the Scripts
+Before running a script, make sure it has executable permissions.
+
+    ```bash 
+    chmod +x <script_name> 
+    ./<script_name>
+
+Replace ```bash<script_name> with the name of the script you want to run. 
 
 # Scripts and How To Use Them
 
 ## ubuntu_system_info.sh
 
-This script will print out the system informtaion of a system running the operating system Ubuntu. 
+This script displays basic system infromation for a computer running Ubuntu Linux to standard output 
+
+The script currently reports information such as: 
+
+- Ubuntu distribution  information 
+- Ubuntu version and release 
+- Available system memory 
+
+    ```bash 
+    chmod +x ubuntu_system_info.sh
+    ./ubuntu_system_info.sh 
+
+# Purpose 
+
+This repository is used to build practical experince with: 
+
+- Bash scripting 
+- Linux System administration 
+- Shell commands and utilities 
+- System infomration gathering 
+- Automation 
+- Command-line tools
+- Git and GitHub 
+
+More scripts will be added soon.  
