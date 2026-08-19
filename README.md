@@ -21,6 +21,8 @@ The script currently reports information such as:
 - Ubuntu version and release 
 - Available system memory 
 
+To run the script, run the following: 
+
     ```bash 
     chmod +x ubuntu_system_info.sh
     ./ubuntu_system_info.sh 
