@@ -23,7 +23,6 @@ The script currently reports information such as:
 
 To run the script, run the following: 
 
-    ```bash 
     chmod +x ubuntu_system_info.sh
     ./ubuntu_system_info.sh 
 
