@@ -88,7 +88,22 @@ system_info()
 	hostname=$(hostname)
 	echo "    Hostname: $hostname"
 	#Network interfaces
+		# get netowrk names 
+		#() around the command to put the output into an array 
+	eth_list=($(ip link | grep "[1-9]:"  | cut -d \  -f2 | cut -d: -f1))
+	eth_status_list=($(ip link | grep "[1-9]:"  | cut -d \  -f9))
+	echo "    Network Interface And Statues: "
+	for i in "${!eth_list[@]}"; do
+		echo "        $i: ${eth_list[i]}, ${eth_status_list[i]}" 
+	done
 	#IP addresses
+	echo "    IP Addresses for UP Interfaces: "
+	for i in "${!eth_status_list[@]}"; do
+		if [ "${eth_status_list[i]}" == "UP" ]; then
+			ip_address=$(ip a show ${eth_list[i]})
+			echo "        IP for ${eth_list[i]}: $ip_address"
+		fi
+	done
 	#MAC addresses
 	#Default gateway
 	#DNS configuration
