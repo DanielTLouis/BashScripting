@@ -49,7 +49,9 @@ system_info()
 	echo "[ HARDWARE ]"
 	echo 
 	#CPU model
+	lscpu | grep "Model name"
 	#Number of CPU cores/threads
+	lscpu
 	#CPU architecture
 	#RAM installed
 	#RAM currently available
@@ -94,20 +96,54 @@ system_info()
 	eth_status_list=($(ip link | grep "[1-9]:"  | cut -d \  -f9))
 	echo "    Network Interface And Statues: "
 	for i in "${!eth_list[@]}"; do
-		echo "        $i: ${eth_list[i]}, ${eth_status_list[i]}" 
+		echo "        $((i+1)): ${eth_list[i]}, ${eth_status_list[i]}" 
 	done
 	#IP addresses
 	echo "    IP Addresses for UP Interfaces: "
 	for i in "${!eth_status_list[@]}"; do
 		if [ "${eth_status_list[i]}" == "UP" ]; then
-			ip_address=$(ip a show ${eth_list[i]})
+			ip_address=$(ip a show ${eth_list[i]} | grep -w "inet" | cut -d\  -f6)
 			echo "        IP for ${eth_list[i]}: $ip_address"
 		fi
 	done
 	#MAC addresses
+	echo "    MAC Addresses for Interfaces:"
+	for i in "${!eth_list[@]}"; do
+		if [ "${eth_list[i]}" == "lo" ]; then
+			mac_address=$(ip a show ${eth_list[i]} | grep "link" | cut -d\  -f6)
+			echo "        $((i+1)): ${eth_list[i]}, $mac_address"
+		else
+			mac_address=$(ip a show ${eth_list[i]} | grep "link/ether" | cut -d\  -f6)
+			echo "        $((i+1)): ${eth_list[i]}, $mac_address"
+		fi
+	done
 	#Default gateway
-	#DNS configuration
+	echo "    Default Gateway: $(ip route show default | sed 's/default via //' )"
+
+	# DNS configuration
+	echo "    Current DNS Servers:"
+
+	resolvectl dns | awk '
+	/^Link/ {
+	    interface = $0
+	    sub(/^.*\(/, "", interface)
+	    sub(/\).*$/, "", interface)
+
+	    printf "        Interface: %s\n", interface
+
+	    if (NF > 3) {
+	        for (i = 4; i <= NF; i++)
+	            printf "            DNS: %s\n", $i
+	    } else {
+	        printf "            DNS: None\n"
+	    }
+	}'
 	#Network connectivity status
+	if ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
+		echo "    Internet Access: Connected"
+	else
+		echo "    Internet Access: Disconnected"
+	fi
 
 	echo
 	echo "[ User Information ]"
