@@ -49,13 +49,27 @@ system_info()
 	echo "[ HARDWARE ]"
 	echo 
 	#CPU model
-	lscpu | grep "Model name"
+	cpu_model=$(lscpu | grep "Model name" | cut -d: -f2 | sed 's/^[[:space:]]*//')
+	## Remove leading white space from string with sed | sed 's/^[[:space:]]*//'
+	echo "    CPU Model: $cpu_model"
 	#Number of CPU cores/threads
-	lscpu
+	echo "    Number of CPU Cores/Threads: "
+	cores=$(lscpu | grep "Core" | cut -d: -f2 |  sed 's/^[[:space:]]*//')
+	thread=$(lscpu | grep "Thread" | cut -d: -f2 |  sed 's/^[[:space:]]*//')
+	echo "        Core(s) per socket: $cores" 
+	echo "        Thread(s) per core: $thread"
 	#CPU architecture
+	architecure=$(lscpu | grep "Architecture" | cut -d: -f2 |  sed 's/^[[:space:]]*//')
+	echo "    CPU Architecture: $architecure"
 	#RAM installed
+	installed_ram=$(awk '/MemTotal/ {printf "%.0fGiB", $2/1024/1024}' /proc/meminfo)
+	echo "    RAM Installed: $installed_ram"
 	#RAM currently available
+	ava_ram=$(free -h | awk '/^Mem:/ {print $4}') 
+	echo "    RAM Currently Available: $ava_ram"
 	#Swap memory
+	swap=$(free -h | awk '/^Swap:/ {print $2}')
+	echo "    Swap Memory: $swap"
 	#Motherboard information
 	#BIOS/UEFI information
 
@@ -234,9 +248,16 @@ system_info()
 	echo "[ System Activity ]"
 	echo 
 	#Current date/time
+	echo "    Date: $(date)"
 	#System uptime
+	uptime=$(uptime | cut -d\  -f3-5 | cut -d, -f1)
+	echo "    System Uptime: $uptime"
 	#Last reboot
+
 	#Last logged-in user
+	last_user=$(last | head -n1 | cut -d\  -f1)
+	last_time=$(last | head -n1 | cut -d\  -f29-32)
+	echo "    Last Logged-in User: $last_user; Since $last_time"
 	#Recent system activity
 
 	echo
