@@ -235,24 +235,71 @@ system_info()
 	echo "[ Software Information ]"
 	echo 
 	#Number of installed packages
+	installed_packages=$(dpkg --get-selections | grep -v deinstall | wc -l)
+	echo "    Number of Installed Packages: $installed_packages"
 	#Available package updates
+	package_updates=$(apt list --upgradable 2>/dev/null | tail -n +2 | wc -l)
+	echo "    Available Package Updates: $package_updates"
 	#Package manager information
-	#Important installed software
+	if command -v apt >/dev/null 2>&1; then
+    	package_manager="APT"
+	elif command -v dnf >/dev/null 2>&1; then
+	    package_manager="DNF"
+	elif command -v yum >/dev/null 2>&1; then
+	    package_manager="YUM"
+	elif command -v pacman >/dev/null 2>&1; then
+	    package_manager="Pacman"
+	else
+	    package_manager="Unknown"
+	fi
+	echo "    Package Manager: $package_manager"
 	#Python version
+	if command -v python >/dev/null 2>&1; then
+		python_version=$(python --version | awk '{printf "%s ", $2}')
+	elif command -v python3 >/dev/null 2>&1; then
+		python_version=$(python3 --version | awk '{printf "%s ", $2}')
+	else
+		python_version="Unknown"
+	fi 
+	echo "    Python Version: $python_version"
 	#Bash version
+	if command -v bash >/dev/null 2>&1; then
+		bash_version=$(bash --version | head -n 1 | awk '{print $4}')
+	else 
+		bash_version="Unkonwn"
+	fi
+	echo "    Bash Version: $bash_version)"
 	#Git version
+	if command -v git >/dev/null 2>&1; then
+		git_version=$(git --version | awk '{printf "%s ", $3}')
+	else
+		git_version="Unknown"
+	fi
+	echo "    Git Version: $git_version"
 
 	echo
 	echo "[ Services ]"
 	echo 
 	#Running services
+	running=$(systemctl list-units --type=service --state=running --no-legend | wc -l)
+	echo "    Runing Services: $running"
 	#Failed services
-	#Important services such as:
+	failed=$(systemctl --failed --type=service --no-legend | wc -l)
+	echo "    Failed Serices: $failed"
 	#SSH
-	#Network services
+	ssh_active=$(systemctl is-active ssh)
+	echo "    SSH Status: $ssh_active"
 	#Firewall
+	firewall_active=$(systemctl is-active ufw)
+	echo "    Firewall Satus (Uncomplicated Firewall): $firewall_active"
 	#Cron
-	#Number of active services
+	cronjobs=$(crontab -l 2>/dev/null | grep -v '^#' | grep -v '^$' | wc -l)
+	echo "    Number of Cron Jobs: $cronjobs"
+	#Network services
+	echo "    Network Services: "
+	systemctl list-units --type=service --state=running --no-legend |
+		grep -Ei 'network|networking|systemd-networkd|NetworkManager|dhcp|ssh' |
+		awk '{printf "        %s\n", $1}'
 
 	echo
 	echo "[ System Logs ]"
@@ -273,12 +320,12 @@ system_info()
 	uptime=$(uptime | cut -d\  -f3-5 | cut -d, -f1)
 	echo "    System Uptime: $uptime"
 	#Last reboot
-
+	echo "    Last Reboot: "
+	last reboot | head -n 1 | awk '{printf "        %-7s %-2s %-7s %-19s %-4s %-2s %-4s %-7s %-2s %-7s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10}'
 	#Last logged-in user
 	last_user=$(last | head -n1 | cut -d\  -f1)
 	last_time=$(last | head -n1 | cut -d\  -f29-32)
 	echo "    Last Logged-in User: $last_user; Since $last_time"
-	#Recent system activity
 
 	echo
 	echo "[ System Health Summary ]"
