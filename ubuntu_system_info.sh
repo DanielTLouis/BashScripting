@@ -71,7 +71,20 @@ system_info()
 	swap=$(free -h | awk '/^Swap:/ {print $2}')
 	echo "    Swap Memory: $swap"
 	#Motherboard information
+	BOARD=$(cat /sys/devices/virtual/dmi/id/board_name 2>/dev/null)
+	if [ -n "$BOARD" ]; then
+	    echo "    Motherboard Serial Number: $BOARD"
+	else
+	    echo "    Motherboard: Unavailable"
+	fi
 	#BIOS/UEFI information
+	vendor=$(cat /sys/class/dmi/id/bios_vendor)
+	version=$(cat /sys/class/dmi/id/bios_version)
+	bios_date=$(cat /sys/class/dmi/id/bios_date) 
+	echo "    BIOS / UEFI Information:"
+	echo "        BIOS Vendor: $vendor"
+	echo "        BIOS Version: $version"
+	echo "        BIOS Date: $bios_date"
 
 	echo
 	echo "[ STORAGE ]"
@@ -90,12 +103,19 @@ system_info()
 	echo "    Disk Usage Percentage: $percent"
 	#List of mounted filesystems
 	echo "    List of Mounted Filesystems: "
-	files=$(df -h | awk '{print $1}')
+	files=$(df -h | awk 'NR > 1 {print $1}') 
+	##NR>1 will skip the first output of "Filesystem" 
 	for i in $files; do
 		echo "        $i"
 	done
 	#Root filesystem usage
+	root_usage=$(df -h /)
+	echo "    Root Filesystem Usage: "
+	df -h / | awk '{printf "        %-12s %-7s %-7s %-7s %-5s\n", $1, $2, $3, $4, $5}'
 	#Information about attached drives
+	disks=$(lsblk -d -o NAME,SIZE,TYPE,MODEL | grep ' disk ')
+	echo "    Mounted Disks: "
+	lsblk -d -o NAME,SIZE,TYPE,MODEL | awk '$3 == "disk" {printf "        %s %s %s %s\n", $1, $2, $3, $4}'
 
 	echo
 	echo "[ Network Information ]"
