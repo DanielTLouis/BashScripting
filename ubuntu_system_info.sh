@@ -206,30 +206,68 @@ system_info()
 	echo "[ System Resources ]"
 	echo 
 	#Current CPU usage
+	echo "    Current CPU Usage: $(top -bn1 | awk '/Cpu\(s\)/ {print 100 - $8}')%"
 	#Memory usage
+	echo "    Memory Usage: $(free | awk '/Mem:/ {printf "%.1f%%", $3/$2 * 100}')"
 	#Swap usage
+	echo "    Swap Usage: $(free -h | awk '/Swap:/ {print $3}')"
 	#Disk usage
+	echo "    Disk Usage: $(df / | awk 'NR==2 {print $5}')"
 	#System load
+	echo "    System Load: $(awk '{print $1}' /proc/loadavg)"
 	#Number of running processes
+	echo "    Running Processes: $(ps -e --no-headers | wc -l)"
 
 	echo
 	echo "[ Process Information ]"
 	echo 
 	#Number of running processes
+	echo "    Running Processes: $(ps -e --no-headers | wc -l)"
 	#Highest CPU-consuming processes
+	echo "    Highest CPU-Consuming Processes:"
+	ps -eo pid,comm,%cpu --sort=-%cpu | head -n 6 | awk '{printf "        %-8s %-20s %s%%\n", $1, $2, $3}'
 	#Highest memory-consuming processes
+	echo "    Highest Memory-Consuming Processes:"
+	ps -eo pid,comm,%mem --sort=-%mem | head -n 6 |
+		awk '{printf "        %-8s %-20s %s%%\n", $1, $2, $3}'
 	#Current user's processes
+	user_process=$(ps -u "$USER" --no-headers | wc -l)
+	echo "    Current User's Processes: $user_process"
 	#System process count
+	echo "    System Processes: $(ps -eo user= | grep '^root$' | wc -l)"
 
 	echo
 	echo "[ Security Information ]"
 	echo 
 	#Firewall status
-	#Firewall rules summary
+	firewall_active=$(systemctl is-active ufw)
+	echo "    Firewall Satus (Uncomplicated Firewall): $firewall_active"
 	#Current user privileges
+	echo "    Current User: $(whoami)"
+	echo "        User ID: $(id -u)"
+	echo "        Primary Group: $(id -gn)"
+
+	if groups | grep -qw sudo; then
+	    echo "        Sudo Privileges: Yes"
+	else
+	    echo "        Sudo Privileges: No"
+	fi
 	#Whether the script is running as root
+	if [ "$EUID" -eq 0 ]; then
+	    echo "    Running as root: Yes"
+	else
+	    echo "    Running as root: No"
+	fi
 	#Failed login attempts
+	if [ -r /var/log/btmp ]; then
+	    echo "    Failed Login Attempts: $(lastb -w 2>/dev/null | wc -l)"
+	else
+	    echo "    Failed Login Attempts: Requires root permissions"
+	fi
 	#SSH status
+	ssh_active=$(systemctl is-active ssh)
+	echo "    SSH Status: $ssh_active"
+
 
 	echo
 	echo "[ Software Information ]"
@@ -304,12 +342,25 @@ system_info()
 	echo
 	echo "[ System Logs ]"
 	echo 
-	#You could have a section that summarizes:
 	#Recent system errors
+	echo "    Recent System Errors:"
+	journalctl -p err -n 5 --no-pager -o cat | awk '{printf "         %s\n", $0}'
 	#Recent warnings
+	echo "    Recent System Warnings:"
+	journalctl -p warning -n 5 --no-pager -o cat | awk '{printf "         %s\n", $0}'
 	#Boot messages
+	echo "    Boot Messages:"
+	journalctl -b -n 5 --no-pager -o cat | awk '{printf "         %s\n", $0}'
 	#Kernel messages
+	echo "    Kernel Messages:"
+	if [ -r /var/log/btmp ]; then
+	    dmesg | tail -n 5 | awk '{printf "         %s\n", $0}'
+	else
+	    echo "        Kernel Logs: Requires root permissions"
+	fi
 	#Authentication events
+	echo "    Authentication Events:"
+	journalctl -t sudo -t sshd -n 5 --no-pager -o cat | awk '{printf "         %s\n", $0}'
 
 	echo
 	echo "[ System Activity ]"
