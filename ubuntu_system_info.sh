@@ -381,14 +381,60 @@ system_info()
 	echo
 	echo "[ System Health Summary ]"
 	echo 
-	#This could be the final section of your script and give the user an overall picture:
 	#CPU: Normal / High
+	CPU_USAGE=$(top -bn1 | awk '/Cpu\(s\)/ {print 100 - $8}')
+	if (( $(echo "$CPU_USAGE >= 80" | bc -l) )); then
+	    echo "    CPU: High (${CPU_USAGE}%)"
+	else
+	    echo "    CPU: Normal (${CPU_USAGE}%)"
+	fi
 	#Memory: Normal / High
+	MEMORY_USAGE=$(free | awk '/Mem:/ {printf "%.0f", $3/$2 * 100}')
+	if [ "$MEMORY_USAGE" -ge 80 ]; then
+	    echo "    Memory: High (${MEMORY_USAGE}%)"
+	else
+	    echo "    Memory: Normal (${MEMORY_USAGE}%)"
+	fi
 	#Disk: Normal / Warning / Critical
+	DISK_USAGE=$(df / | awk 'NR==2 {gsub("%","",$5); print $5}')
+	if [ "$DISK_USAGE" -ge 90 ]; then
+	    echo "    Disk: Critical (${DISK_USAGE}%)"
+	elif [ "$DISK_USAGE" -ge 70 ]; then
+	    echo "    Disk: Warning (${DISK_USAGE}%)"
+	else
+	    echo "    Disk: Normal (${DISK_USAGE}%)"
+	fi
 	#Swap: Normal / High
+	SWAP_USAGE=$(free | awk '/Swap:/ {
+	    if ($2 == 0) print 0
+	    else printf "%.0f", $3/$2 * 100
+	}')
+
+	if [ "$SWAP_USAGE" -ge 50 ]; then
+	    echo "    Swap: High (${SWAP_USAGE}%)"
+	else
+	    echo "    Swap: Normal (${SWAP_USAGE}%)"
+	fi
 	#Firewall: Enabled / Disabled
+	if systemctl is-enabled ufw 2>/dev/null | grep -q "enabled"; then
+	    echo "    Firewall: Enabled"
+	else
+	    echo "    Firewall: Disabled"
+	fi
 	#Failed services: None / Detected
+	FAILED_SERVICES=$(systemctl --failed --type=service --no-legend | wc -l)
+	if [ "$FAILED_SERVICES" -eq 0 ]; then
+	    echo "    Failed Services: None"
+	else
+	    echo "    Failed Services: Detected ($FAILED_SERVICES)"
+	fi
 	#Available updates: None / Available
+	UPDATES=$(apt list --upgradable 2>/dev/null | tail -n +2 | wc -l)
+	if [ "$UPDATES" -eq 0 ]; then
+	    echo "    Available Updates: None"
+	else
+	    echo "    Available Updates: Available ($UPDATES)"
+	fi
 }
 
 system_info 
