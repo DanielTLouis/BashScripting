@@ -5,13 +5,6 @@
 
 ## !! Run this in Sublime Editor with 'CTRL + B'
 
-# Prints total amount of usable memory for the system 
-#echo "Memory:"
-#free -h | awk '/^Mem:/ {print "Total Available memory:", $2}'
-
-# Prints the search path to indicate where applications are located 
-#echo $PATH
-
 
 system_info()
 {
