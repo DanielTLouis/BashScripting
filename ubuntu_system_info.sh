@@ -8,9 +8,17 @@
 
 system_info()
 {
-	echo "==============================================="
+	if [ -n "$TERM" ]; then
+    	width=$(tput cols 2>/dev/null)
+	else
+	    width=60
+	fi
+
+	width=${width:-60}
+	divider=$(printf '%*s\n' "$width" '' | tr ' ' '=')
+	echo "$divider"
 	echo "            UBUNTU SYSTEM INFORMATION          "
-	echo "==============================================="
+	echo "$divider"
 
 	echo 
 	echo "[ SYSTEM ]"
@@ -428,6 +436,9 @@ system_info()
 	else
 	    echo "    Available Updates: Available ($UPDATES)"
 	fi
+
+
+	echo "$divider"
 }
 
 system_info 
