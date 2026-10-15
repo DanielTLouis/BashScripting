@@ -6,7 +6,22 @@
 ## !! Run this in Sublime Editor with 'CTRL + B'
 
 disk_usage(){
-    echo "disk usage" 
+    if [ "$1" == "help" ]; then
+        echo "help asked for"
+        echo "To install the monitor run this script with no arguments"
+        echo -e "To uninstall the monitor run with argument \"Uninstall\""
+    elif [ "$1" == "Uninstall" ]; then
+        echo "Uninstalling the monitor"
+    else
+        echo "Installing Disk Usage Monitor"
+        if command -v ncdu >/dev/null 2>&1; then
+            echo "ncdu is installed."
+            ncdu --version
+        else
+            echo "ncdu is not installed."
+        fi 
+    fi
+
 }
 
-disk_usage
+disk_usage $1 
