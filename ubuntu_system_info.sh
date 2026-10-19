@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Ubunto System Info
 # By Daniel Louis
 # Created: 08/14/2026

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # System Health Monitor
 # By Daniel Louis
 # Created: 10/08/2026

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Disk Usage
 # By Daniel Louis
 # Created: 10/15/2026
@@ -24,16 +25,6 @@ print_help() {
 
 install() {
     echo "Installing Disk Usage Monitor"
-
-    #if command -v ncdu >/dev/null 2>&1; then
-    #    echo "ncdu is installed."
-    #    ncdu --version
-    #else
-    #    echo "ncdu is not installed."
-    #    echo "ncdu is required, please install"
-    #    return 1 
-    #    #TODO try to install ncdu first 
-    #fi 
 
     #Add alias to call 'diskusage'
     script_path=$(readlink -f "${BASH_SOURCE[0]}")
@@ -63,7 +54,6 @@ EOF
 alias diskusage="$HOME/.local/bin/disk_usage.sh"
 EOF
         source "$HOME/.bashrc"
-        type diskusage
         echo "Alias set to diskusage"
     fi
 
@@ -257,13 +247,15 @@ disk_usage(){
         touch "${log_path}/disk_usage.log"
         log_size=$(du -B1 "${log_path}/disk_usage.log" | awk '{print $1}')
 
+        usage=$(df / | awk 'NR==2 {gsub(/%/, "", $5); print $5}')
+
+
         if [ "$log_size" -ge 1000000000 ]; then
             mv "${log_path}/disk_usage.log" "${log_path}/disk_usage-rolled.log"
         fi
         if [ "$2" == "--toScreen" ] || [ "$2" == "-t" ]; then
 
             echo "Output to screen: "
-            usage=$(df / | awk 'NR==2 {gsub(/%/, "", $5); print $5}')
             if [ "$usage" -gt 90 ]; then
                 echo "WARNING: Root filesystem usage is above 90%!"
                 echo "Current usage: ${usage}%"
@@ -273,7 +265,6 @@ disk_usage(){
                 echo "Disk usage is within limits."
             fi
         fi
-        usage=$(df / | awk 'NR==2 {gsub(/%/, "", $5); print $5}')
         if [ "$usage" -gt 90 ]; then
             cat >> "$log_path/disk_usage.log" <<EOF
 ========================================
@@ -285,6 +276,10 @@ WARNING: Root filesystem usage is above 90%!
 EOF
             #TODO escalate warning to user 
             #ncdu -x /
+
+            #Rush Notice To Desktop if over 90%
+            notify-send "Disk Usage Warning" \
+                "Root filesystem usage is at ${usage}%"
         else
             cat >> "$log_path/disk_usage.log" <<EOF
 ========================================
