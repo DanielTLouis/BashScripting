@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Disk Usage
+# Quick Change Directory
 # By Daniel Louis
 # Created: 10/26/2026
-# This Bash script will run or install a Quick CD command to navigate to commonly used driectories set by the user 
+# This Bash script will run or install a Quick CD command to navigate to commonly used directories set by the user 
 
 #Might want to change this location / let the user move the config file 
 config_file="$HOME/.qcd"
@@ -14,9 +14,9 @@ help(){
     echo
     echo "qcd <option>"
     echo "-h,--help               		This help message"
-    echo "-i,--install            		To install the script to be a perminate alias on the machine"
+    echo "-i,--install            		To install the script to be a permanent alias on the machine"
     echo "-U,--Uninstall          		To uninstall the qcd previously installed"
-    echo "-a,--add <alias> <file path>  To add an alias that will perminately be stored"
+    echo "-a,--add <alias> <file path>  To add an alias that will permanently be stored"
     echo "-r,--remove <alias>           To remove a previously set alias"
     echo "-l,--list                     To list all alias for qcd"
 }
@@ -31,10 +31,10 @@ add(){
 
 	echo -e "adding new path and alias $2\n $3"
 	if [ -d "$3" ];then
-		if grep -qE "^$2=" "$config_file"; then
-			echo "Alias alread saved to qcd, please choice another."
+		if awk -F= -v key="$2" '$1 == key { found=1; exit } END { exit !found }' "$config_file"; then
+			echo "Alias already saved to qcd, please choose another."
 		else
-			#Adding alias to config_file in patter alias=/path
+			#Adding alias to config_file in pattern alias=/path
 			cat >> "$config_file" <<EOF 
 $2=$3
 EOF
@@ -43,7 +43,7 @@ EOF
 			echo "qcd $2"
 		fi
 	else
-		echo -e"The file path does not exist.\n Please check and try to add again."
+		echo -e "The directory path does not exist.\nPlease check the path and try again."	
 	fi
 }
 
@@ -52,10 +52,11 @@ remove(){
 	if [[ ! -f "$config_file" ]]; then
 	    echo "Configuration File does not exist."
 	    echo "Please add alias with the --add flag to continue using qcd"
+	    return 1
 	fi 
 
-	if grep -qE "^$2=" "$config_file"; then
-		sed -i "s/^$2=.*/ /" "$config_file"
+	if awk -F= -v key="$2" '$1 == key { found=1; exit } END { exit !found }' "$config_file"; then
+		sed -i "/^$2=/d" "$config_file"
 		echo "Alias has been removed"
 	else
 		echo "Alias does not exist for qcd"
@@ -64,7 +65,7 @@ remove(){
 }
 
 install(){
-	echo "Insatlling qcd"
+	echo "Installing qcd"
 	#Add alias to call 'qcd'
     script_path=$(readlink -f "${BASH_SOURCE[0]}")
     if [ ! -d "$HOME/.local/bin" ]; then
@@ -79,12 +80,13 @@ install(){
         echo "The qcd function already exists in .bashrc."
     else
         cat >> "$bashrc" <<'EOF'
-
+# BEGIN QCD FUNCTION
 # Quick Change Directory function
 qcd() {
     source "$HOME/.local/bin/qcd.sh"
     command_qcd "$@"
 }
+# END QCD FUNCTION
 EOF
         echo "QCD function added to .bashrc"
     fi
@@ -96,6 +98,8 @@ EOF
 	        return 1
 	    }
 	fi 
+
+	source ~/.bashrc
 
 }
 
@@ -120,8 +124,8 @@ uninstall(){
 
 	local bashrc="$HOME/.bashrc"
 
-	if grep -qE '^[[:space:]]*qcd[[:space:]]*\(\)[[:space:]]*\{' "$bashrc"; then
-	    if sed -i '/^[[:space:]]*qcd[[:space:]]*()[[:space:]]*{/,+4d' "$bashrc"; then
+	if grep -qF '# BEGIN QCD FUNCTION' "$bashrc"; then
+	    if sed -i '/# BEGIN QCD FUNCTION/,/# END QCD FUNCTION/d' "$bashrc"; then
 	        unset -f qcd
 	        echo "Quick Change Directory function removed."
 	    else
@@ -178,15 +182,15 @@ command_qcd(){
 			    cd -- "$path" || return 1
 			else
 				if [[ $# -eq 0 ]]; then
-					cd $HOME
+					cd "$HOME"
 				else
 				    # The supplied argument was not one of the supported keys
 	 				echo "qcd: unknown key '$1'"
-	 				retun -1
+	 				return -1
  				fi
 			fi
 			# Helpfully print the current directory name to indicate where you are
- 			echo "Curent Directory:"
+ 			echo "Current Directory:"
  			pwd
  			;;
  	esac
