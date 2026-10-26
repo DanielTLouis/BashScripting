@@ -19,7 +19,6 @@ help(){
     echo "-a,--add <alias> <file path>  To add an alias that will perminately be stored"
     echo "-r,--remove <alias>           To remove a previously set alias"
     echo "-l,--list                     To list all alias for qcd"
-
 }
 
 add(){
@@ -65,37 +64,88 @@ remove(){
 }
 
 install(){
-	echo "Insatlling"
+	echo "Insatlling qcd"
+	#Add alias to call 'qcd'
+    script_path=$(readlink -f "${BASH_SOURCE[0]}")
+    if [ ! -d "$HOME/.local/bin" ]; then
+        mkdir -p "$HOME/.local/bin"
+    fi
+    cp "$script_path" "$HOME/.local/bin"
+    chmod +x "$HOME/.local/bin/qcd.sh"
+
+   local bashrc="$HOME/.bashrc"
+
+    if grep -qE '^[[:space:]]*qcd[[:space:]]*\(\)' "$bashrc"; then
+        echo "The qcd function already exists in .bashrc."
+    else
+        cat >> "$bashrc" <<'EOF'
+
+# Quick Change Directory function
+qcd() {
+    source "$HOME/.local/bin/qcd.sh"
+    command_qcd "$@"
+}
+EOF
+        echo "QCD function added to .bashrc"
+    fi
+
+    #Create Config File
+    if [[ ! -f "$config_file" ]]; then
+	    touch "$config_file" || {
+	        echo "Error: Could not create $config_file" >&2
+	        return 1
+	    }
+	fi 
+
 }
 
 uninstall(){
-	echo "Uninstalling"
+	echo "Uninstalling qcd"
 	echo "Removing configuration file"
-	if [ -f "$HOME/.qdc" ]; then 
+	if [ -f "$HOME/.qcd" ]; then 
 		rm "$HOME/.qcd"
+	else 
+		echo "No configuration file found. Moving on."
 	fi
-}
 
-lookup(){
-	config_file="$HOME/.qcd"
-
-	shortcut_exists() {
-	    local key="$1"
-
-	    [[ -f "$config_file" ]] || return 1
-
-	    grep -qE "^${key}=" "$config_file"
-	}
-
-	# Example usage
-	if shortcut_exists "projects"; then
-	    echo "Shortcut exists."
+	echo "Removing source file"
+	if [ -f "$HOME/.local/bin/qcd.sh" ]; then
+		rm "$HOME/.local/bin/qcd.sh"
 	else
-	    echo "Shortcut does not exist."
+		echo "Source File not found. Moving on."
 	fi
+
+	echo "Removing alias"
+	echo "Removing qcd function"
+
+	local bashrc="$HOME/.bashrc"
+
+	if grep -qE '^[[:space:]]*qcd[[:space:]]*\(\)[[:space:]]*\{' "$bashrc"; then
+	    if sed -i '/^[[:space:]]*qcd[[:space:]]*()[[:space:]]*{/,+4d' "$bashrc"; then
+	        unset -f qcd
+	        echo "Quick Change Directory function removed."
+	    else
+	        echo "Error: Failed to remove qcd function from .bashrc." >&2
+	        return 1
+	    fi
+	else
+	    echo "Quick Change Directory function was not found in .bashrc."
+	    unset -f qcd
+	fi
+
 }
 
-qcd(){
+
+shortcut_exists() {
+    local key="$1"
+
+    [[ -f "$config_file" ]] || return 1
+
+    grep -qE "^${key}=" "$config_file"
+}
+
+
+command_qcd(){
 	# Define the cases for the inputs 
 	case "$1" in 
 		-h|--help)
@@ -113,7 +163,7 @@ qcd(){
 		-u|--uninstall)
 			uninstall
 			;;
-		-l|list)
+		-l|--list)
 			if [[ -f "$config_file" ]]; then
 				cat "$HOME/.qcd" || {
 					echo "Error: Could not open $config_file" >&2
@@ -122,17 +172,27 @@ qcd(){
 			fi
 			;;
 		*)
-			lookup 
-			# The supplied argument was not one of the supported keys
- 			echo "qcd: unknown key '$1'"
- 			retun -1
+			if shortcut_exists "$1"; then
+				key="$1"
+			    path=$(awk -F= -v key="$key" '$1 == key {print substr($0, index($0, "=") + 1); exit}' "$config_file")
+			    cd -- "$path" || return 1
+			else
+				if [[ $# -eq 0 ]]; then
+					cd $HOME
+				else
+				    # The supplied argument was not one of the supported keys
+	 				echo "qcd: unknown key '$1'"
+	 				retun -1
+ 				fi
+			fi
+			# Helpfully print the current directory name to indicate where you are
+ 			echo "Curent Directory:"
+ 			pwd
  			;;
  	esac
 
- 	# Helpfully print the current directory name to indicate where you are
- 	pwd
 }
 
-
-#qcd "$@"
-qcd --add home /home/
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    command_qcd "$@"
+fi
