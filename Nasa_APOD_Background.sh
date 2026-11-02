@@ -25,30 +25,25 @@ set_background(){
 }
 
 install_cron() {
-    local script_path
-    local cron_job
+    local script_path="$HOME/.local/bin/apod_to_background.sh"
+    local cron_job="0 0 * * * $script_path >> $HOME/apod.log 2>&1"
+    local cron_job_reboot="@reboot $script_path >> $HOME/apod.log 2>&1"
+    local existing_cron
 
-    script_path="$HOME/.local/bin/apod_to_background.sh"
-    cron_job="0 0 * * * $script_path >> $HOME/apod.log 2>&1"
-    cron_job_reboot="@reboot $script_path >> $HOME/apod.log 2>&1"
+    existing_cron=$(crontab -l 2>/dev/null || true)
 
-    # Check whether the job already exists
-    if crontab -l 2>/dev/null | grep -Fqx "$cron_job"; then
-        echo "APOD TO BACKGROUND cron job already exists."
-        return 0
+    if ! grep -Fqx "$cron_job" <<< "$existing_cron"; then
+        existing_cron+=$'\n'"$cron_job"
     fi
 
-    # Add the job while preserving existing cron jobs
-    {
-        crontab -l 2>/dev/null
-        echo "$cron_job"
-        echo "$cron_job_reboot"
-    } | crontab -
+    if ! grep -Fqx "$cron_job_reboot" <<< "$existing_cron"; then
+        existing_cron+=$'\n'"$cron_job_reboot"
+    fi
 
-    if [ $? -eq 0 ]; then
-        echo "APOD TO BACKGROUND cron job installed."
+    if printf '%s\n' "$existing_cron" | crontab -; then
+        echo "APOD TO BACKGROUND cron jobs installed."
     else
-        echo "Error: Failed to install cron job."
+        echo "Error: Failed to install cron jobs." >&2
         return 1
     fi
 }
@@ -74,27 +69,22 @@ uninstall_cron() {
 }
 
 uninstall(){
-	echo "Uninstalling Nasa APOD Background"
-	echo "Removing Source File"
-	rm -f "$HOME/.local/bin/apod_to_background.sh"
-	echo "Removing recuring daily run"
-	uninstall_cron
-	echo "Uninstall Complete"
+	echo "Uninstalling NASA APOD Background"
+
+    echo "Removing recurring cron jobs"
+    uninstall_cron || return 1
+
+    echo "Removing source file"
+    rm -f "$HOME/.local/bin/apod_to_background.sh"
+
+    echo "Uninstall complete"
 }
 
 install(){
 	echo "Installing Nasa APOD Background"
-	if [ ! -d "$HOME/.local/bin" ]; then
-        mkdir -p "$HOME/.local/bin"
-    fi
-    if [ ! -f "$HOME/.local/bin/apod_to_background.sh" ];  then
-    	touch "$HOME/.local/bin/apod_to_background.sh"
-    else
-    	rm -f "$HOME/.local/bin/apod_to_background.sh"
-    	touch "$HOME/.local/bin/apod_to_background.sh"
-    fi
+	mkdir -p "$HOME/.local/bin" || return 1
 
-    cat >> "$HOME/.local/bin/apod_to_background.sh" <<EOF
+    cat > "$HOME/.local/bin/apod_to_background.sh" <<'EOF'
 #!/usr/bin/env bash
 
 download_image(){
