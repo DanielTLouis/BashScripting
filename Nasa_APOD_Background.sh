@@ -155,6 +155,7 @@ NASA_APOD "$@"
 EOF
     chmod +x "$HOME/.local/bin/apod_to_background.sh"
     install_cron
+    echo "Installation complete"
 }
 
 help(){
