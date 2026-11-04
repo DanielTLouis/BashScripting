@@ -4,24 +4,45 @@
 # Created: 11/02/2026
 # This Bash script will set the NASA APOD to your Desktop Background and will do it daily if installed
 
+
+check_internet() {
+    if ! curl -fsS --connect-timeout 10 --max-time 15 \
+        https://science.nasa.gov/ -o /dev/null; then
+        echo "Error: No internet connection. Skipping APOD update." >&2
+        return 1
+    fi
+
+    return 0
+}
+
 download_image(){
+	check_internet || exit 1
 	curl -L "$1" -o "$HOME/.APOD_IMAGE/apod_image.jpg"
 }
 
-set_background(){
-	image_file="$HOME/.APOD_IMAGE/apod_image.jpg"
+set_background() {
+    local image_file="$HOME/.APOD_IMAGE/apod_image.jpg"
 
-	if [[ -f "$image_file" ]]; then
-	    image_uri="file://$image_file"
+    if [[ ! -f "$image_file" ]]; then
+        echo "Error: Image file not found." >&2
+        return 1
+    fi
 
-	    gsettings set org.gnome.desktop.background picture-uri "$image_uri"
-	    gsettings set org.gnome.desktop.background picture-uri-dark "$image_uri"
+    if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+    fi
 
-	    echo "Desktop background updated."
-	else
-	    echo "Error: Image file not found." >&2
-	    exit 1
-	fi
+    if ! gsettings set org.gnome.desktop.background picture-uri "file://$image_file"; then
+        echo "Error: Failed to update desktop background." >&2
+        return 1
+    fi
+
+    if ! gsettings set org.gnome.desktop.background picture-uri-dark "file://$image_file"; then
+        echo "Error: Failed to update dark desktop background." >&2
+        return 1
+    fi
+
+    echo "Desktop background updated."
 }
 
 install_cron() {
@@ -87,24 +108,44 @@ install(){
     cat > "$HOME/.local/bin/apod_to_background.sh" <<'EOF'
 #!/usr/bin/env bash
 
+check_internet() {
+    if ! curl -fsS --connect-timeout 10 --max-time 15 \
+        https://science.nasa.gov/ -o /dev/null; then
+        echo "Error: No internet connection. Skipping APOD update." >&2
+        return 1
+    fi
+
+    return 0
+}
+
 download_image(){
+	check_internet || exit 1
 	curl -L "$1" -o "$HOME/.APOD_IMAGE/apod_image.jpg"
 }
 
-set_background(){
-	image_file="$HOME/.APOD_IMAGE/apod_image.jpg"
+set_background() {
+    local image_file="$HOME/.APOD_IMAGE/apod_image.jpg"
 
-	if [[ -f "$image_file" ]]; then
-	    image_uri="file://$image_file"
+    if [[ ! -f "$image_file" ]]; then
+        echo "Error: Image file not found." >&2
+        return 1
+    fi
 
-	    gsettings set org.gnome.desktop.background picture-uri "$image_uri"
-	    gsettings set org.gnome.desktop.background picture-uri-dark "$image_uri"
+    if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+    fi
 
-	    echo "Desktop background updated."
-	else
-	    echo "Error: Image file not found." >&2
-	    exit 1
-	fi
+    if ! gsettings set org.gnome.desktop.background picture-uri "file://$image_file"; then
+        echo "Error: Failed to update desktop background." >&2
+        return 1
+    fi
+
+    if ! gsettings set org.gnome.desktop.background picture-uri-dark "file://$image_file"; then
+        echo "Error: Failed to update dark desktop background." >&2
+        return 1
+    fi
+
+    echo "Desktop background updated."
 }
 
 NASA_APOD(){
