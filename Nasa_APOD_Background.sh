@@ -228,7 +228,7 @@ NASA_APOD(){
 			uninstall
 			;;
 		*)
-			echo "Set APOD to Desktop Background"
+			echo "Setting APOD to Desktop Background"
 			if [ ! -d "$HOME/.APOD_IMAGE/" ]; then 
 				mkdir -p "$HOME/.APOD_IMAGE/"
 			fi
