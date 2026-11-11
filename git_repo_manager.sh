@@ -19,12 +19,48 @@ help(){
 
 #Function to install his to the bash terminal 
 install(){
+	echo "Installing Git Repo Manager"
+	script_path=$(readlink -f "${BASH_SOURCE[0]}")
+    if [ ! -d "$HOME/.local/bin" ]; then
+        mkdir -p "$HOME/.local/bin"
+    fi
+    cp "$script_path" "$HOME/.local/bin"
 
+    chmod +x "$HOME/.local/bin/git_repo_manager.sh"
+    if grep -qE '^[[:space:]]*alias[[:space:]]+grm=' "$HOME/.bashrc"; then
+        echo "The grm alias already exists."
+    else
+        if [ ! -d "$HOME/.local/share/applications" ]; then
+            mkdir -p "$HOME/.local/share/applications"
+        fi
+        cat >> "$HOME/.bashrc" <<EOF
+alias grm="$HOME/.local/bin/git_repo_manager.sh"
+EOF
+    fi
+    source ~/.bashrc
 }
 
 #Function to uninstall already installed version 
 uninstall(){
+	echo "Uninstalling Git Repo Manager"
+	rm "$HOME/.local/bin/git_repo_manager.sh"
 
+	#TODO remove alias and cron 
+    local bashrc="$HOME/.bashrc"
+    if grep -qE '^[[:space:]]*alias[[:space:]]+grm=' "$bashrc"; then
+        if sed -i '/^[[:space:]]*alias[[:space:]]\+grm=/d' "$bashrc"; then
+            unalias grm 2>/dev/null
+            echo "Git Repo Manager alias removed."
+        else
+            echo "Error: Failed to remove alias from .bashrc."
+            return 1
+        fi
+    else
+        echo "Git Repo Manager alias was not found in .bashrc."
+        unalias grm 2>/dev/null
+    fi
+    unalias grm
+    source ~/.bashrc
 }
 
 #Function that will check for any flags added to the function call 
@@ -32,16 +68,20 @@ check_flags(){
 	case "$1" in 
 		-h|--help)
 			help
+			exit 0
 			;;
 		-i|--install)
 			install
+			exit 0
 			;;
 		-u|--uninstall)
 			uninstall
+			exit 0
 			;;
 		*)
 			return
 			;;
+	esac
 }
 
 #Function to view the commit history for a repo
