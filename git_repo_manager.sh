@@ -4,6 +4,157 @@
 # Created: 11/02/2026
 # This Bash script will help manage the git repos installed on the local machine 
 
+#Function to print the help menu
+help(){
+	echo "Git Repo Manager Help"
+	echo "-------------------------"
+    echo "use the alias 'grm' for commandline alias"
+    echo
+    echo "grm <option>"
+    echo "-h,--help               		This help message"
+    echo "-i,--install            		To install the script to be a permanent alias on the machine"
+    echo "-u,--uninstall          		To uninstall the qcd previously installed"
+    echo "No options will run the program"
+}
+
+#Function to install his to the bash terminal 
+install(){
+
+}
+
+#Function to uninstall already installed version 
+uninstall(){
+
+}
+
+#Function that will check for any flags added to the function call 
+check_flags(){
+	case "$1" in 
+		-h|--help)
+			help
+			;;
+		-i|--install)
+			install
+			;;
+		-u|--uninstall)
+			uninstall
+			;;
+		*)
+			return
+			;;
+}
+
+#Function to view the commit history for a repo
+view_commit_his(){
+	local repo_path="$1"
+
+    echo "Commit History: $(basename "$repo_path")"
+    echo "---------------------------------------"
+
+    if ! git -C "$repo_path" log -10 \
+        --format="%h | %as | %an | %s"; then
+
+        echo "Error: Unable to retrieve commit history."
+        return 1
+    fi
+}
+
+#Function to select what repo to print the defails for 
+choose_repo(){
+	while true; do
+		echo "Select a repo to view the details for:"
+		choice_list=()
+		index=1
+		for i in $1; do
+			echo "$index - $i"
+			choice_list+=("$i")
+			((index+=1))
+		done
+		echo "0 - Return to menu"
+		read input 
+
+		if [[ "$input" == "0" ]]; then
+			return 
+		elif ! [[ "$input" =~ ^[0-9]+$ ]]; then
+			echo "Please select an option from the list"
+		elif (( input >= index )); then
+			echo "Please select an option from the list"
+		else
+			if [ "$2" == "1" ];then
+				view_repo_details "${choice_list[input-1]}"
+			elif [ "$2" == "2" ]; then
+				view_commit_his "${choice_list[input-1]}"
+			fi
+		fi
+	done
+}
+
+#Function to select and print the details for a single repo 
+view_repo_details() {
+    local repo_path="$1"
+
+    if ! git -C "$repo_path" rev-parse \
+        --is-inside-work-tree &>/dev/null; then
+        echo "Error: Invalid Git repository."
+        return 1
+    fi
+
+    echo "=================================="
+    echo "Repository: $(basename "$repo_path")"
+    echo "=================================="
+
+    echo "Location:"
+    git -C "$repo_path" rev-parse --show-toplevel
+
+    echo
+    echo "Current Branch:"
+    git -C "$repo_path" branch --show-current
+
+    echo
+    echo "Local Branches:"
+    git -C "$repo_path" branch
+
+    echo
+    echo "Remote Repositories:"
+    git -C "$repo_path" remote -v
+
+    echo
+    echo "Most Recent Commit:"
+    git -C "$repo_path" log -1 \
+        --format="Hash: %h%nAuthor: %an%nDate: %as%nMessage: %s"
+}
+
+#Function to automatically check for repo updates 
+update(){
+	echo "Fetching remote updates..."
+    echo
+
+    while IFS= read -r -d '' repo; do
+
+        repo_path=$(dirname "$repo")
+        repo_name=$(basename "$repo_path")
+
+        echo "Repository: $repo_name"
+
+        # Check whether the repository has remotes
+        if [[ -z "$(git -C "$repo_path" remote)" ]]; then
+            echo "No remote configured. Skipping."
+            echo "-----------------------------"
+            continue
+        fi
+
+        # Fetch updates from all configured remotes
+        if git -C "$repo_path" fetch --all; then
+            echo "Fetch completed successfully."
+        else
+            echo "Error: Failed to fetch updates."
+        fi
+
+        echo "-----------------------------"
+
+    done < <(find "$HOME" -name ".git" -print0 2>/dev/null)
+}
+
 #Function to check the status of all github repos 
 check_status(){
 	echo "Checking all Git repositories..."
@@ -97,6 +248,9 @@ choices(){
 
 #Main driver function 
 git_repo_manager(){
+
+	check_flags "$1"
+
 	echo "Managing Git Repos"
 
 	if ! check_git; then
@@ -117,7 +271,8 @@ git_repo_manager(){
 				input="r"
 			;;
 			"2")
-				echo "View Repository Details"
+				echo "Repository Details: "
+				choose_repo "$list" "1"
 				input="r"
 			;;
 			"3")
@@ -126,11 +281,13 @@ git_repo_manager(){
 				input="r"
 				;;
 			"4")
-				echo "Fetch Remote Updates"
+				echo "Fetching Remote Updates"
+				update 
 				input="r"
 				;;
 			"5")
-				echo "View Commit History"
+				echo "Viewing Commit History"
+				choose_repo "$list" "2"
 				input="r"
 				;;
 			"6")
