@@ -11,6 +11,11 @@ play(){
 	echo "       Bash Music Player       "
 	echo "$divider"
 
+    ####
+    #Music Directory: ~/Music
+    #Songs Found: 24
+    ####
+
     while true; do
         echo "1) List Songs"
         echo "2) 2) Play Song"
@@ -19,28 +24,23 @@ play(){
         echo "5) View Playlists"
         echo "6) Shuffle Playlist"
         echo "7) Play Playlist"
-        echo "8) Exit"
+        echo "8) Change Music Directory"
+        echo "9) Exit"
 
         echo -n "Select an option:"
         read input
-
+        case "$input" in 
+                1)
+                    echo "Listing Songs"
+                ;;
+                9)
+                exit 0
+                ;;
+            *) 
+                echo "Please select from the list."
+                ;;
+        esac
     done
-
-    ####
-    #Music Directory: ~/Music
-    #Songs Found: 24
-
-    #1) List Songs
-    #2) Play Song
-    #3) Play Random Song
-    #4) Create Playlist
-    #5) View Playlists
-    #6) Shuffle Playlist
-    #7) Stop Playback
-    #8) Exit
-
-    #Select an option: _
-    ####
 }
 
 play "$@"
